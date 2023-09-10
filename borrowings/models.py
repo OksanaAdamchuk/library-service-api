@@ -27,8 +27,9 @@ class Borrowing(models.Model):
     def full_clean(self, exclude=None, validate_unique=True):
         super().full_clean(exclude=exclude, validate_unique=validate_unique)
 
-        if self.actual_return_date < self.borrow_date:
-            raise ValidationError("You can't return book before the date you've borrowed it.")
+        if self.actual_return_date and self.borrow_date:
+            if self.actual_return_date < self.borrow_date:
+                raise ValidationError("You can't return book before the date you've borrowed it.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
