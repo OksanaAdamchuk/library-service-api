@@ -4,7 +4,11 @@ from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 
 from borrowings.models import Borrowing
-from borrowings.serializers import BorrowingDetailSerializer, BorrowingListSerializer, CreateBorrowingSerializer
+from borrowings.serializers import (
+    BorrowingDetailSerializer,
+    BorrowingListSerializer,
+    CreateBorrowingSerializer,
+)
 
 
 class BorrowingListView(generics.ListCreateAPIView):
@@ -16,18 +20,27 @@ class BorrowingListView(generics.ListCreateAPIView):
             return CreateBorrowingSerializer
         elif self.request.method == "GET":
             return BorrowingListSerializer
-    
+
     def get_queryset(self):
         queryset = Borrowing.objects.select_related("book", "user")
 
+        is_active = self.request.query_params.get("is_active")
+
         if not self.request.user.is_staff:
             queryset = queryset.filter(user=self.request.user)
+
+        if is_active:
+            is_active = is_active.lower() == "true"
+            if is_active:
+                queryset = queryset.filter(actual_return_date__isnull=True)
+            else:
+                queryset = queryset.exclude(actual_return_date__isnull=True)
 
         return queryset
 
 
 class BorrowingRetrieveView(generics.RetrieveAPIView):
-    serializer_class = BorrowingDetailSerializer    
+    serializer_class = BorrowingDetailSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
