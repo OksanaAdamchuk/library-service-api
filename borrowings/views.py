@@ -25,9 +25,14 @@ class BorrowingListView(generics.ListCreateAPIView):
         queryset = Borrowing.objects.select_related("book", "user")
 
         is_active = self.request.query_params.get("is_active")
+        user_id = self.request.query_params.get("user_id")
 
         if not self.request.user.is_staff:
             queryset = queryset.filter(user=self.request.user)
+
+        if self.request.user.is_staff and user_id:
+            user = int(user_id)
+            queryset = queryset.filter(user__id=user)
 
         if is_active:
             is_active = is_active.lower() == "true"
