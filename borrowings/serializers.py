@@ -1,7 +1,9 @@
+import asyncio
 from rest_framework import serializers
 from books.serializers import BookSerializer
 
 from borrowings.models import Borrowing
+from borrowings.notifications import send_notification
 
 
 class BorrowingListSerializer(serializers.ModelSerializer):
@@ -34,7 +36,6 @@ class BorrowingDetailSerializer(serializers.ModelSerializer):
 
 
 class CreateBorrowingSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Borrowing
         fields = (
@@ -43,7 +44,7 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
             "book",
         )
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> Borrowing:
         book = validated_data["book"]
         if book.inventory == 0:
             raise serializers.ValidationError("Book is out of stock")
@@ -53,6 +54,13 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
 
         user = self.context["request"].user
         borrowing = Borrowing.objects.create(user=user, **validated_data)
+
+        text = (
+            f"{borrowing.user.first_name} {borrowing.user.last_name} borrowed "
+            f"{borrowing.book.title}, {borrowing.book.author} till {borrowing.expected_return_date}"
+        )
+
+        asyncio.run(send_notification(text))
 
         return borrowing
 
