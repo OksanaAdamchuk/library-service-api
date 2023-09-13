@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from typing import Any
 
 from borrowings.models import Borrowing
 from borrowings.serializers import (
@@ -46,6 +48,25 @@ class BorrowingListView(generics.ListCreateAPIView):
                 queryset = queryset.exclude(actual_return_date__isnull=True)
 
         return queryset
+    
+    @extend_schema(description="filtering by user and active status",
+        parameters=[
+            OpenApiParameter(
+                "is_active",
+                type={"type": "boolean"},
+                description="Filter by is_active status (example: ?is_active=true)",
+                location=OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                "user_id",
+                type={"type": "number"},
+                description="Filter by user id (example: ?user_id=2)",
+                location=OpenApiParameter.QUERY,
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs) -> Any:
+        return super().list(request, *args, **kwargs)
 
 
 class BorrowingRetrieveView(generics.RetrieveAPIView):
