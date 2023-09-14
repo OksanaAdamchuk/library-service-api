@@ -48,8 +48,9 @@ class BorrowingListView(generics.ListCreateAPIView):
                 queryset = queryset.exclude(actual_return_date__isnull=True)
 
         return queryset
-    
-    @extend_schema(description="filtering by user and active status",
+
+    @extend_schema(
+        description="filtering by user and active status",
         parameters=[
             OpenApiParameter(
                 "is_active",
@@ -63,7 +64,7 @@ class BorrowingListView(generics.ListCreateAPIView):
                 description="Filter by user id (example: ?user_id=2)",
                 location=OpenApiParameter.QUERY,
             ),
-        ]
+        ],
     )
     def list(self, request, *args, **kwargs) -> Any:
         return super().list(request, *args, **kwargs)
@@ -96,10 +97,16 @@ class ReturnBorrowingView(generics.UpdateAPIView):
         instance = self.get_object()
 
         if instance.user != request.user:
-            return Response({"detail": "You do not have permission to return this borrowing."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"detail": "You do not have permission to return this borrowing."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if instance.actual_return_date:
-            return Response({"detail": "This borrowing has already been returned."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "This borrowing has already been returned."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -109,4 +116,6 @@ class ReturnBorrowingView(generics.UpdateAPIView):
             instance.book.inventory += 1
             instance.book.save()
 
-        return Response({"detail": "Borrowing returned successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Borrowing returned successfully."}, status=status.HTTP_200_OK
+        )

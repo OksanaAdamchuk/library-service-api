@@ -109,7 +109,7 @@ class PrivateUserApiTests(TestCase):
             email="test@test.com",
             password="Testpass123@",
             first_name="test name",
-            last_name="test surname"
+            last_name="test surname",
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)

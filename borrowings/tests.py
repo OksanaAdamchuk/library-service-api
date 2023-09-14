@@ -24,15 +24,15 @@ class PublicBorrowingApiTest(TestCase):
             author="Test Author",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
-        self.user = get_user_model().objects.create_user(email="test@test.com", password="test123@")
+        self.user = get_user_model().objects.create_user(
+            email="test@test.com", password="test123@"
+        )
 
         self.borrowing = Borrowing.objects.create(
-            expected_return_date="2023-09-24",
-            book=self.book,
-            user=self.user
+            expected_return_date="2023-09-24", book=self.book, user=self.user
         )
 
     def test_list_borrowing_not_allowed(self) -> None:
@@ -76,7 +76,7 @@ class PrivateBorrowingApiTest(TestCase):
             author="Test Author1",
             cover="Hard",
             inventory=1,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
         self.book2 = Book.objects.create(
@@ -84,38 +84,33 @@ class PrivateBorrowingApiTest(TestCase):
             author="Test Author2",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
-        self.user1 = get_user_model().objects.create_user(email="test1@test.com", password="test123@")
+        self.user1 = get_user_model().objects.create_user(
+            email="test1@test.com", password="test123@"
+        )
 
         self.borrowing = Borrowing.objects.create(
-            expected_return_date="2023-09-24",
-            book=self.book1,
-            user=self.user
+            expected_return_date="2023-09-24", book=self.book1, user=self.user
         )
 
         self.borrowing1 = Borrowing.objects.create(
-            expected_return_date="2023-09-25",
-            book=self.book1,
-            user=self.user1
+            expected_return_date="2023-09-25", book=self.book1, user=self.user1
         )
 
         self.borrowing2 = Borrowing.objects.create(
-            expected_return_date="2023-09-26",
-            book=self.book2,
-            user=self.user
+            expected_return_date="2023-09-26", book=self.book2, user=self.user
         )
-
 
     def test_str_borrowing_method(self) -> None:
         borrowing = Borrowing.objects.get(id=1)
 
         self.assertEqual(
             str(borrowing),
-            f"{self.user.first_name} {self.user.last_name} borrows {self.book1.title} till {borrowing.expected_return_date}"
+            f"{self.user.first_name} {self.user.last_name} borrows {self.book1.title} till {borrowing.expected_return_date}",
         )
-        
+
     def test_list_borrowings_only_of_signined_user(self) -> None:
         res = self.client.get(BORROWINGS_URL)
         borrowings = Borrowing.objects.filter(user=self.user.id)
@@ -130,11 +125,13 @@ class PrivateBorrowingApiTest(TestCase):
         self.client.patch(url, data)
 
         res = self.client.get(BORROWINGS_URL, {"is_active": True})
-        borrowings = Borrowing.objects.filter(user=self.user.id).filter(actual_return_date__isnull=True)
+        borrowings = Borrowing.objects.filter(user=self.user.id).filter(
+            actual_return_date__isnull=True
+        )
         serializer = BorrowingListSerializer(borrowings, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data) 
+        self.assertEqual(res.data, serializer.data)
 
     def test_list_borrowings_filtering_by_inactive_status(self) -> None:
         data = {"actual_return_date": "2023-09-16"}
@@ -142,11 +139,13 @@ class PrivateBorrowingApiTest(TestCase):
         self.client.patch(url, data)
 
         res = self.client.get(BORROWINGS_URL, {"is_active": False})
-        borrowings = Borrowing.objects.filter(user=self.user.id).filter(actual_return_date__isnull=False)
+        borrowings = Borrowing.objects.filter(user=self.user.id).filter(
+            actual_return_date__isnull=False
+        )
         serializer = BorrowingListSerializer(borrowings, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)      
+        self.assertEqual(res.data, serializer.data)
 
     def test_retrieve_borrowing(self) -> None:
         url = reverse("borrowings:borrowing-detail", args=[self.borrowing.id])
@@ -174,8 +173,10 @@ class PrivateBorrowingApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(payload["book"], borrowing.book.id)
         self.assertEqual(self.user.id, borrowing.user.id)
- 
-        expected_date = datetime.strptime(payload["expected_return_date"], "%Y-%m-%d").date()
+
+        expected_date = datetime.strptime(
+            payload["expected_return_date"], "%Y-%m-%d"
+        ).date()
         self.assertEqual(expected_date, getattr(borrowing, "expected_return_date"))
 
     def test_check_book_inventory_after_create_borrowing(self) -> None:
@@ -185,7 +186,7 @@ class PrivateBorrowingApiTest(TestCase):
         }
         self.client.post(BORROWINGS_URL, payload)
         self.book1.refresh_from_db()
-        
+
         self.assertEqual(self.book1.inventory, 0)
 
     def test_check_book_out_of_stock(self) -> None:
@@ -204,7 +205,7 @@ class PrivateBorrowingApiTest(TestCase):
         self.book1.refresh_from_db()
         response_content = res.content.decode("utf-8")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        
+
         response_data = json.loads(response_content)
         expected_message = "Book is out of stock"
         self.assertEqual(response_data, [expected_message])
@@ -252,7 +253,7 @@ class AdminUserBorrowingApiTest(TestCase):
             author="Test Author1",
             cover="Hard",
             inventory=1,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
         self.book2 = Book.objects.create(
@@ -260,27 +261,23 @@ class AdminUserBorrowingApiTest(TestCase):
             author="Test Author2",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
-        self.user1 = get_user_model().objects.create_user(email="test1@test.com", password="test123@")
+        self.user1 = get_user_model().objects.create_user(
+            email="test1@test.com", password="test123@"
+        )
 
         self.borrowing = Borrowing.objects.create(
-            expected_return_date="2023-09-24",
-            book=self.book1,
-            user=self.user
+            expected_return_date="2023-09-24", book=self.book1, user=self.user
         )
 
         self.borrowing1 = Borrowing.objects.create(
-            expected_return_date="2023-09-25",
-            book=self.book1,
-            user=self.user1
+            expected_return_date="2023-09-25", book=self.book1, user=self.user1
         )
 
         self.borrowing2 = Borrowing.objects.create(
-            expected_return_date="2023-09-26",
-            book=self.book2,
-            user=self.user
+            expected_return_date="2023-09-26", book=self.book2, user=self.user
         )
 
     def test_list_borrowings_of_all_users(self) -> None:
@@ -309,4 +306,4 @@ class AdminUserBorrowingApiTest(TestCase):
         serializer = BorrowingListSerializer(borrowings, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data) 
+        self.assertEqual(res.data, serializer.data)

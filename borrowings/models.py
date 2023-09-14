@@ -29,7 +29,9 @@ class Borrowing(models.Model):
 
         if self.actual_return_date and self.borrow_date:
             if self.actual_return_date < self.borrow_date:
-                raise ValidationError("You can't return book before the date you've borrowed it.")
+                raise ValidationError(
+                    "You can't return book before the date you've borrowed it."
+                )
 
     def save(self, *args, **kwargs):
         self.full_clean()
