@@ -148,15 +148,6 @@ class PrivateBorrowingApiTest(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)      
 
-    # def test_list_borrowings_filtering_by_user_id_not_allowed(self) -> None:
-    #     res = self.client.get(BORROWINGS_URL, {"user_id": self.user1.id})
-    #     borrowings = Borrowing.objects.filter(user__id=self.user1.id)
-    #     serializer = BorrowingListSerializer(borrowings, many=True)
-    #     print(res.data)
-    #     print(serializer.data)
-    #     self.assertEqual(res.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(res.data, serializer.data) 
-
     def test_retrieve_borrowing(self) -> None:
         url = reverse("borrowings:borrowing-detail", args=[self.borrowing.id])
         res = self.client.get(url)
