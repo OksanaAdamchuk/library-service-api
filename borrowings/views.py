@@ -30,16 +30,16 @@ class BorrowingViewSet(
     def get_serializer_class(self) -> serializers.Serializer:
         if self.action == "list":
             return BorrowingListSerializer
-        
+
         if self.action == "retrieve":
             return BorrowingDetailSerializer
-        
+
         if self.action == "create":
             return CreateBorrowingSerializer
-        
+
         if self.action == "return_borrowing":
             return ReturnBorrowingSerializer
-    
+
         return BorrowingListSerializer
 
     def get_queryset(self) -> QuerySet:
@@ -76,7 +76,7 @@ class BorrowingViewSet(
         obj = get_object_or_404(queryset, pk=self.kwargs["pk"])
         self.check_object_permissions(self.request, obj)
         return obj
-    
+
     @extend_schema(
         description="filtering by user and active status",
         parameters=[

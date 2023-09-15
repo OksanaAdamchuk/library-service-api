@@ -24,15 +24,19 @@ class Borrowing(models.Model):
     class Meta:
         ordering = ["borrow_date"]
 
-    def full_clean(self, exclude=None, validate_unique=True):
-        super().full_clean(exclude=exclude, validate_unique=validate_unique)
-
-        if self.actual_return_date and self.borrow_date:
-            if self.actual_return_date < self.borrow_date:
-                raise ValidationError(
-                    "You can't return book before the date you've borrowed it."
+    @staticmethod
+    def validate_date(actual_date: date, borrow_date: date, error_to_raise) -> None:
+        if actual_date and borrow_date:
+            if actual_date < borrow_date:
+                raise error_to_raise(
+                    "You can't return the book before the date you've borrowed it."
                 )
 
+    def clean(self):
+        Borrowing.validate_date(
+            self.actual_return_date, self.borrow_date, ValidationError
+        )
+
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.clean()
         super().save(*args, **kwargs)
