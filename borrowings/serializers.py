@@ -54,7 +54,10 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data) -> Borrowing:
-        book = validated_data["book"]
+        book = validated_data.get("book")
+        if book is None:
+            raise serializers.ValidationError("Book field is required.")
+
         if book.inventory == 0:
             raise serializers.ValidationError("Book is out of stock")
 
@@ -78,6 +81,11 @@ class ReturnBorrowingSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         data = super(ReturnBorrowingSerializer, self).validate(attrs=attrs)
         borrow_date = self.instance.borrow_date
+        actual_return_date = self.instance.actual_return_date
+        if actual_return_date is not None:
+            raise serializers.ValidationError(
+                "This borrowing has already been returned."
+            )
         Borrowing.validate_date(
             attrs["actual_return_date"], borrow_date, ValidationError
         )
@@ -86,3 +94,12 @@ class ReturnBorrowingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Borrowing
         fields = ["id", "actual_return_date"]
+
+    def save(self, **kwargs):
+        instance = super(ReturnBorrowingSerializer, self).save(**kwargs)
+
+        if instance.actual_return_date is not None:
+            instance.book.inventory += 1
+            instance.book.save()
+
+        return instance

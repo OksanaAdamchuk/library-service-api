@@ -1,4 +1,4 @@
-from rest_framework import generics, serializers, mixins
+from rest_framework import serializers, mixins
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet
 from rest_framework import status
@@ -11,6 +11,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from typing import Any
 
 from borrowings.models import Borrowing
+from borrowings.permissions import CanReturnBorrowing
 from borrowings.serializers import (
     BorrowingDetailSerializer,
     BorrowingListSerializer,
@@ -97,29 +98,17 @@ class BorrowingViewSet(
     def list(self, request, *args, **kwargs) -> Any:
         return super().list(request, *args, **kwargs)
 
-    @action(methods=["PATCH"], detail=True, url_path="return")
+    @action(
+        methods=["PATCH"],
+        detail=True,
+        url_path="return",
+        permission_classes=[CanReturnBorrowing],
+    )
     def return_borrowing(self, request, *args, **kwargs) -> Response:
         instance = self.get_object()
-
-        if instance.user != request.user and not request.user.is_staff:
-            return Response(
-                {"detail": "You do not have permission to return this borrowing."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        if instance.actual_return_date:
-            return Response(
-                {"detail": "This borrowing has already been returned."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        with transaction.atomic():
-            serializer.save()
-            instance.book.inventory += 1
-            instance.book.save()
+        serializer.save()
 
         return Response(
             {"detail": "Borrowing returned successfully."}, status=status.HTTP_200_OK
