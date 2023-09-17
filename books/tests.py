@@ -20,21 +20,21 @@ class PublicBookApiTest(TestCase):
             author="Test Author",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
         self.book2 = Book.objects.create(
             title="Test Title2",
             author="Test Author2",
             cover="Hard",
             inventory=2,
-            daily_fee=2.5
+            daily_fee=2.5,
         )
 
     def test_str_book_method(self) -> None:
         book = Book.objects.get(id=1)
 
         self.assertEqual(str(book), f"{book.title}, {book.author}")
-        
+
     def test_list_books(self) -> None:
         res = self.client.get(BOOKS_URL)
         books = Book.objects.all()
@@ -83,7 +83,7 @@ class PrivateBookApiTest(TestCase):
             author="Test Author",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
     def test_create_book_forbidden(self) -> None:
@@ -117,7 +117,7 @@ class AdminUserBookApiTest(TestCase):
             author="Test Author",
             cover="Hard",
             inventory=2,
-            daily_fee=2.1
+            daily_fee=2.1,
         )
 
     def test_create_book(self) -> None:

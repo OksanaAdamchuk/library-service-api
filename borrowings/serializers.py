@@ -1,4 +1,7 @@
 import asyncio
+from datetime import date
+from django.core.exceptions import ValidationError
+
 from rest_framework import serializers
 from books.serializers import BookSerializer
 
@@ -45,8 +48,16 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
             "book",
         )
 
+    def validate_expected_return_date(self, value):
+        if value < date.today():
+            raise serializers.ValidationError("Date cannot be earlier than today.")
+        return value
+
     def create(self, validated_data) -> Borrowing:
-        book = validated_data["book"]
+        book = validated_data.get("book")
+        if book is None:
+            raise serializers.ValidationError("Book field is required.")
+
         if book.inventory == 0:
             raise serializers.ValidationError("Book is out of stock")
 
@@ -57,7 +68,7 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
         borrowing = Borrowing.objects.create(user=user, **validated_data)
 
         text = (
-            f"{borrowing.user.first_name} {borrowing.user.last_name} borrowed "
+            f"{borrowing.user.email} borrowed "
             f"{borrowing.book.title}, {borrowing.book.author} till {borrowing.expected_return_date}"
         )
 
@@ -67,6 +78,28 @@ class CreateBorrowingSerializer(serializers.ModelSerializer):
 
 
 class ReturnBorrowingSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        data = super(ReturnBorrowingSerializer, self).validate(attrs=attrs)
+        borrow_date = self.instance.borrow_date
+        actual_return_date = self.instance.actual_return_date
+        if actual_return_date is not None:
+            raise serializers.ValidationError(
+                "This borrowing has already been returned."
+            )
+        Borrowing.validate_date(
+            attrs["actual_return_date"], borrow_date, ValidationError
+        )
+        return data
+
     class Meta:
         model = Borrowing
-        fields = ["actual_return_date"]
+        fields = ["id", "actual_return_date"]
+
+    def save(self, **kwargs):
+        instance = super(ReturnBorrowingSerializer, self).save(**kwargs)
+
+        if instance.actual_return_date is not None:
+            instance.book.inventory += 1
+            instance.book.save()
+
+        return instance
